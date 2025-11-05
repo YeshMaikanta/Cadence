@@ -51,6 +51,12 @@
                     <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">Event End Time</label>
                     <input type="time" id="endTime" class="input-field" step="1800" onchange="calculateCadence()">
                 </div>
+                
+                <!-- NEW: On-Demand Content Expiration Date -->
+                <div class="md:col-span-2 mt-4">
+                    <label for="onDemandExpirationDate" class="block text-sm font-medium text-gray-700 mb-1">On-Demand Content Expiration Date (Required for On-Demand Workflow)</label>
+                    <input type="date" id="onDemandExpirationDate" class="input-field" onchange="calculateCadence()">
+                </div>
             </div>
 
             <!-- Event Type and Checkboxes -->
@@ -171,6 +177,7 @@
             const startT = document.getElementById('startTime').value;
             const endD = document.getElementById('endDate').value;
             const endT = document.getElementById('endTime').value;
+            const onDemandExpD = document.getElementById('onDemandExpirationDate').value; // NEW INPUT
             const type = document.querySelector('input[name="eventType"]:checked')?.value;
             const isTLE = document.getElementById('isTLE').checked;
             const isAITour = document.getElementById('isAITour').checked;
@@ -312,9 +319,29 @@
                 time: wlDeniedEndTimeText,
                 logic: wlDeniedEndLogic
             };
+            
+            // 5. NEW: Registration On-Demand Workflow End Date
+            if (onDemandExpD) {
+                // Assuming On-Demand expiration time is not needed for the 7-day calculation, 
+                // we'll treat the expiration date as the start of the T+7 period.
+                const onDemandExpirationDT = new Date(`${onDemandExpD}T00:00:00`); 
+                const regOnDemandEndDT = addCalendarDays(onDemandExpirationDT, 7);
+
+                results.regOnDemandEnd = {
+                    date: formatDate(regOnDemandEndDT),
+                    time: 'N/A', // Time is usually not specified for 7-day windows
+                    logic: 'On-Demand Content Expiration Date + 7 Calendar Days'
+                };
+            } else {
+                results.regOnDemandEnd = {
+                    date: 'N/A',
+                    time: 'N/A',
+                    logic: 'Requires "On-Demand Content Expiration Date"'
+                };
+            }
 
 
-            // 5. Render Results
+            // 6. Render Results
             renderResults(results, isDigital, isTLE, isAITour);
         };
 
@@ -395,6 +422,12 @@
                                 <td class="px-4 py-4 whitespace-pre-wrap text-sm text-gray-600">${results.waitlistEnd.logic}</td>
                                 <td class="px-4 py-4 whitespace-nowrap text-sm text-green-700 font-bold">${results.waitlistEnd.date}</td>
                                 <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${results.waitlistEnd.time}</td>
+                            </tr>
+                            <tr class="${(results.regOnDemandEnd.date === 'N/A') ? 'bg-gray-50' : 'bg-blue-50'}">
+                                <td class="px-4 py-4 whitespace-nowrap font-medium text-blue-800">Registration On-Demand</td>
+                                <td class="px-4 py-4 whitespace-pre-wrap text-sm text-gray-600">${results.regOnDemandEnd.logic}</td>
+                                <td class="px-4 py-4 whitespace-nowrap text-sm ${results.regOnDemandEnd.date === 'N/A' ? 'text-gray-500' : 'text-blue-700 font-bold'}">${results.regOnDemandEnd.date}</td>
+                                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${results.regOnDemandEnd.time}</td>
                             </tr>
                             <tr class="${(isAITour && !isDigital) ? 'bg-red-50' : ''}">
                                 <td class="px-4 py-4 whitespace-nowrap font-medium text-gray-900">Waitlist Denied - Start</td>
